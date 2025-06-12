@@ -38,8 +38,7 @@ query_input.send_keys(Keys.ENTER)
 
 time.sleep(5)
 
-# Liste pour stocker les résultats
-doctors_data = []
+doctor_data = []
 
 for i in range(1, 1 + num_doctors):
     try:
@@ -47,34 +46,39 @@ for i in range(1, 1 + num_doctors):
         sector_selector = f"div.dl-card:nth-child({i+2}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > div:nth-child(2) > p:nth-child(1)"
         address_selector = f"div.dl-card:nth-child({i+2}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > p:nth-child(1)"
         city_postal_selector = f"div.dl-card:nth-child({i+2}) > div:nth-child(1) > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > p:nth-child(2)"
-        
+        rdv_selector = f"div.dl-card:nth-child({i+2}) span[class*='availabilities-slot'], div.dl-card:nth-child({i+2}) span[id^='slot']"
+
         name_elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, name_selector)))
         sector_elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, sector_selector)))
         address_elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, address_selector)))
         city_postal_elem = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, city_postal_selector)))
-        
-        # Séparer code postal et ville
+        try:
+            rdv_elem = driver.find_element(By.CSS_SELECTOR, rdv_selector)
+            rdv_text = rdv_elem.text.strip()
+        except:
+            rdv_text = "Non disponible"
+
         city_postal = city_postal_elem.text.strip().split(' ', 1)
         postal_code = city_postal[0]
         city = city_postal[1] if len(city_postal) > 1 else ""
-        
-        doctors_data.append({
+
+        doctor_data.append({
             "Nom complet": name_elem.text,
             "Secteur d'assurance": sector_elem.text,
             "Adresse": address_elem.text,
             "Ville": city,
-            "Code postal": postal_code
+            "Code postal": postal_code,
+            "Date de RDV": rdv_text
         })
     except Exception as e:
         print(f"Médecin #{i} : données non trouvées ou hors page")
 
 driver.quit()
 
-# Écriture dans le fichier CSV
 with open('docteurs.csv', mode='w', newline='', encoding='utf-8') as file:
-    writer = csv.DictWriter(file, fieldnames=["Nom complet", "Secteur d'assurance", "Adresse", "Ville", "Code postal"])
+    writer = csv.DictWriter(file, fieldnames=["Nom complet", "Secteur d'assurance", "Adresse", "Ville", "Code postal", "Date de RDV"])
     writer.writeheader()
-    for doctor in doctors_data:
+    for doctor in doctor_data:
         writer.writerow(doctor)
 
 print("Données exportées dans docteurs.csv")
